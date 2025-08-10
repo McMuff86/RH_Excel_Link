@@ -1,0 +1,15 @@
+C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Plugin\bin\Debug\net7.0\ExcelLink.Plugin.deps.json
+C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Plugin\bin\Debug\net7.0\ExcelLink.Plugin.dll
+C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Plugin\bin\Debug\net7.0\ExcelLink.Plugin.pdb
+C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Plugin\bin\Debug\net7.0\ExcelLink.Core.dll
+C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Plugin\bin\Debug\net7.0\ExcelLink.Core.pdb
+C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Plugin\obj\Debug\net7.0\ExcelLink.Plugin.csproj.AssemblyReference.cache
+C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Plugin\obj\Debug\net7.0\ExcelLink.Plugin.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Plugin\obj\Debug\net7.0\ExcelLink.Plugin.AssemblyInfoInputs.cache
+C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Plugin\obj\Debug\net7.0\ExcelLink.Plugin.AssemblyInfo.cs
+C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Plugin\obj\Debug\net7.0\ExcelLink.Plugin.csproj.CoreCompileInputs.cache
+C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Plugin\obj\Debug\net7.0\ExcelLin.9C11E3FB.Up2Date
+C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Plugin\obj\Debug\net7.0\ExcelLink.Plugin.dll
+C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Plugin\obj\Debug\net7.0\refint\ExcelLink.Plugin.dll
+C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Plugin\obj\Debug\net7.0\ExcelLink.Plugin.pdb
+C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Plugin\obj\Debug\net7.0\ref\ExcelLink.Plugin.dll

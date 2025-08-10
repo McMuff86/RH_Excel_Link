@@ -1,0 +1,12 @@
+C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Core\bin\Release\net7.0\ExcelLink.Core.deps.json
+C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Core\bin\Release\net7.0\ExcelLink.Core.dll
+C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Core\bin\Release\net7.0\ExcelLink.Core.pdb
+C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Core\obj\Release\net7.0\ExcelLink.Core.csproj.AssemblyReference.cache
+C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Core\obj\Release\net7.0\ExcelLink.Core.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Core\obj\Release\net7.0\ExcelLink.Core.AssemblyInfoInputs.cache
+C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Core\obj\Release\net7.0\ExcelLink.Core.AssemblyInfo.cs
+C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Core\obj\Release\net7.0\ExcelLink.Core.csproj.CoreCompileInputs.cache
+C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Core\obj\Release\net7.0\ExcelLink.Core.dll
+C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Core\obj\Release\net7.0\refint\ExcelLink.Core.dll
+C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Core\obj\Release\net7.0\ExcelLink.Core.pdb
+C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Core\obj\Release\net7.0\ref\ExcelLink.Core.dll
