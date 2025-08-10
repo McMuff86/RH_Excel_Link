@@ -19,3 +19,4 @@ C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Plugin\bin\Release\net7.0-wi
 C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Plugin\bin\Release\net7.0-windows\RBush.dll
 C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Plugin\bin\Release\net7.0-windows\SixLabors.Fonts.dll
 C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Plugin\bin\Release\net7.0-windows\System.IO.Packaging.dll
+C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Plugin\obj\Release\net7.0-windows\ExcelLink.Plugin.sourcelink.json

@@ -19,19 +19,14 @@ public sealed class ExcelLinkInsertCommand : Command
 
     protected override Result RunCommand(RhinoDoc doc, RunMode mode)
     {
-        var gs = new GetString();
-        gs.SetCommandPrompt("Enter Excel spec: <filePath>|<sheet>|<rangeOrNamedRange>");
-        gs.AcceptNothing(false);
-        var res = gs.Get();
-        if (res != GetResult.String)
-            return gs.CommandResult();
-
-        var spec = (gs.StringResult() ?? string.Empty).Trim();
-        if (!TryParseSpec(spec, out var filePath, out var sheet, out var range))
-        {
-            RhinoApp.WriteLine("Invalid format. Example: C:\\Users\\me\\file.xlsx|Sheet1|A1:D20");
-            return Result.Failure;
-        }
+        // UI dialog for input
+        var dlg = new UI.InsertDialog();
+        var dlgRes = dlg.ShowModal(Rhino.UI.RhinoEtoApp.MainWindow);
+        if (dlg.Result == null)
+            return Result.Cancel;
+        var filePath = dlg.Result.FilePath;
+        var sheet = dlg.Result.Sheet;
+        var range = dlg.Result.RangeOrName;
 
         if (!File.Exists(filePath))
         {
@@ -45,38 +40,22 @@ public sealed class ExcelLinkInsertCommand : Command
             var table = reader.ReadTable(filePath, sheet, range);
             RhinoApp.WriteLine($"Loaded {table.Rows.Count} rows × {table.Columns.Count} columns from '{sheet}:{range}'.");
 
-            // Ask for insert point
+            // Pick insert point
             var gp = new GetPoint();
             gp.SetCommandPrompt("Pick insert point");
             if (gp.Get() != GetResult.Point)
                 return gp.CommandResult();
             var insertPoint = gp.Point();
 
-            // Ask for scale factor (optional)
-            double scale = 1.0;
-            var gsScale = new GetString();
-            gsScale.SetCommandPrompt("Scale (1 = 1:1 in mm to model units). Press Enter for 1");
-            gsScale.AcceptNothing(true);
-            var scaleRes = gsScale.Get();
-            if (scaleRes == GetResult.String && double.TryParse(gsScale.StringResult(), out var parsed))
-                scale = Math.Max(0.001, parsed);
-
-            // Ask for horizontal alignment override
-            var gsAlign = new GetOption();
-            gsAlign.SetCommandPrompt("Horizontal alignment (Enter = From Excel)");
-            var optLeft = gsAlign.AddOption("Left");
-            var optCenter = gsAlign.AddOption("Center");
-            var optRight = gsAlign.AddOption("Right");
-            var optExcel = gsAlign.AddOption("Excel");
-            RhinoTableRenderer.HorizontalOverride horiz = RhinoTableRenderer.HorizontalOverride.UseExcel;
-            var resAlign = gsAlign.Get();
-            if (resAlign == GetResult.Option)
+            // Scale & alignment from dialog
+            double scale = Math.Max(0.001, dlg.Result.Scale);
+            RhinoTableRenderer.HorizontalOverride horiz = dlg.Result.Alignment switch
             {
-                if (gsAlign.OptionIndex() == optLeft) horiz = RhinoTableRenderer.HorizontalOverride.Left;
-                else if (gsAlign.OptionIndex() == optCenter) horiz = RhinoTableRenderer.HorizontalOverride.Center;
-                else if (gsAlign.OptionIndex() == optRight) horiz = RhinoTableRenderer.HorizontalOverride.Right;
-                else horiz = RhinoTableRenderer.HorizontalOverride.UseExcel;
-            }
+                "Left" => RhinoTableRenderer.HorizontalOverride.Left,
+                "Center" => RhinoTableRenderer.HorizontalOverride.Center,
+                "Right" => RhinoTableRenderer.HorizontalOverride.Right,
+                _ => RhinoTableRenderer.HorizontalOverride.UseExcel
+            };
 
             var blockName = $"ExcelLink_{Guid.NewGuid():N}";
             var rr = RhinoTableRenderer.RenderTableAsBlock(
@@ -84,13 +63,20 @@ public sealed class ExcelLinkInsertCommand : Command
                 table,
                 blockName,
                 insertPoint,
-                scaleMultiplier: scale,
-                topRowAtTop: true,
-                horizontal: horiz,
-                insertInstance: true,
+                scale,
+                true,
+                horiz,
+                1,
+                true,
                 out var defIndex,
                 out var instanceId,
-                reinsertTransforms: null);
+                out var _,
+                null,
+                dlg.Result.DrawGrid,
+                dlg.Result.TextHeightMm,
+                dlg.Result.FontFamily,
+                dlg.Result.DimStyleName,
+                dlg.Result.Wrap);
             if (rr == Result.Success)
             {
                 RhinoApp.WriteLine($"Inserted block '{blockName}' at {insertPoint} (scale {scale}). DefIndex={defIndex}");
@@ -104,6 +90,18 @@ public sealed class ExcelLinkInsertCommand : Command
                     def.SetUserString(BlockMetadataKeys.Range, range);
                     def.SetUserString(BlockMetadataKeys.Scale, scale.ToString(System.Globalization.CultureInfo.InvariantCulture));
                     def.SetUserString(BlockMetadataKeys.Align, ((int)horiz).ToString(System.Globalization.CultureInfo.InvariantCulture));
+                    def.SetUserString(BlockMetadataKeys.ShowGrid, dlg.Result.DrawGrid ? "1" : "0");
+                    if (dlg.Result.TextHeightMm.HasValue)
+                        def.SetUserString(BlockMetadataKeys.TextMm, dlg.Result.TextHeightMm.Value.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                    else
+                        def.SetUserString(BlockMetadataKeys.TextMm, string.Empty);
+                    if (!string.IsNullOrWhiteSpace(dlg.Result.FontFamily))
+                        def.SetUserString(BlockMetadataKeys.Font, dlg.Result.FontFamily);
+                    else
+                        def.SetUserString(BlockMetadataKeys.Font, string.Empty);
+                    def.SetUserString(BlockMetadataKeys.DimStyle, dlg.Result.DimStyleName ?? string.Empty);
+                    def.SetUserString(BlockMetadataKeys.Wrap, dlg.Result.Wrap ? "1" : "0");
+                    def.SetUserString(BlockMetadataKeys.VAlign, "1");
                     // Also on the inserted instance (helps selection scenarios)
                     if (instanceId != Guid.Empty)
                     {
@@ -116,9 +114,23 @@ public sealed class ExcelLinkInsertCommand : Command
                             attrs.SetUserString(BlockMetadataKeys.Range, range);
                             attrs.SetUserString(BlockMetadataKeys.Scale, scale.ToString(System.Globalization.CultureInfo.InvariantCulture));
                             attrs.SetUserString(BlockMetadataKeys.Align, ((int)horiz).ToString(System.Globalization.CultureInfo.InvariantCulture));
+                            attrs.SetUserString(BlockMetadataKeys.ShowGrid, dlg.Result.DrawGrid ? "1" : "0");
+                            if (dlg.Result.TextHeightMm.HasValue)
+                                attrs.SetUserString(BlockMetadataKeys.TextMm, dlg.Result.TextHeightMm.Value.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                            else
+                                attrs.SetUserString(BlockMetadataKeys.TextMm, string.Empty);
+                            if (!string.IsNullOrWhiteSpace(dlg.Result.FontFamily))
+                                attrs.SetUserString(BlockMetadataKeys.Font, dlg.Result.FontFamily);
+                            else
+                                attrs.SetUserString(BlockMetadataKeys.Font, string.Empty);
+                            attrs.SetUserString(BlockMetadataKeys.DimStyle, dlg.Result.DimStyleName ?? string.Empty);
+                            attrs.SetUserString(BlockMetadataKeys.Wrap, dlg.Result.Wrap ? "1" : "0");
+                            attrs.SetUserString(BlockMetadataKeys.VAlign, "1");
                             doc.Objects.ModifyAttributes(obj, attrs, true);
                         }
                     }
+                    // Register watcher
+                    ExcelLink.Plugin.Services.ExcelLinkWatcherService.Instance.RegisterDefinition(doc, def.Index, filePath);
                 }
             }
             return rr;

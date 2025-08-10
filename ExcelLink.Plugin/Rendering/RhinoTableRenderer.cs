@@ -27,21 +27,42 @@ public static class RhinoTableRenderer
         double scaleMultiplier,
         bool topRowAtTop,
         HorizontalOverride horizontal,
+        int verticalAlign, // 0=Top,1=Middle,2=Bottom
         bool insertInstance,
         out int instanceDefinitionIndex,
         out Guid insertedInstanceId,
-        System.Collections.Generic.IEnumerable<Transform>? reinsertTransforms = null)
+        out System.Collections.Generic.List<Guid>? reinsertedInstanceIds,
+        System.Collections.Generic.IEnumerable<Transform>? reinsertTransforms = null,
+        bool drawGrid = true,
+        double? overrideTextHeightMm = null,
+        string? fontFamily = null,
+        string? dimStyleName = null,
+        bool enableWrap = false)
     {
         instanceDefinitionIndex = -1;
         insertedInstanceId = Guid.Empty;
+        reinsertedInstanceIds = null;
         if (table.Columns.Count == 0 || table.Rows.Count == 0)
             return Result.Failure;
 
         double mmToModel = RhinoMath.UnitScale(UnitSystem.Millimeters, doc.ModelUnitSystem) * Math.Max(1e-6, scaleMultiplier);
-        double textHeightMm = 2.5;
+        double textHeightMm = overrideTextHeightMm ?? 2.5;
         double marginMm = 1.0;
         double textHeight = textHeightMm * mmToModel;
         double margin = marginMm * mmToModel;
+
+        // Resolve DimStyle once if provided
+        Guid? dimStyleId = null;
+        int dimStyleIndex = -1;
+        if (!string.IsNullOrWhiteSpace(dimStyleName))
+        {
+            var ds = doc.DimStyles.FindName(dimStyleName);
+            if (ds != null)
+            {
+                dimStyleId = ds.Id;
+                dimStyleIndex = ds.Index;
+            }
+        }
 
         // Precompute x and y coordinates of grid lines
         var xPositions = new List<double> { 0.0 };
@@ -60,26 +81,33 @@ public static class RhinoTableRenderer
 
         var geoms = new List<GeometryBase>();
         var atts = new List<ObjectAttributes>();
+        var tempIds = new List<Guid>();
 
         double totalHeight = yPositions[^1];
 
         // Grid - horizontal (invert so first row appears at top)
-        for (int r = 0; r < yPositions.Count; r++)
+        if (drawGrid)
         {
-            double y = topRowAtTop ? (totalHeight - yPositions[r]) : yPositions[r];
-            var a = new Point3d(0, y, 0);
-            var b = new Point3d(xPositions[^1], y, 0);
-            geoms.Add(new LineCurve(a, b));
-            atts.Add(new ObjectAttributes());
+            for (int r = 0; r < yPositions.Count; r++)
+            {
+                double y = topRowAtTop ? (totalHeight - yPositions[r]) : yPositions[r];
+                var a = new Point3d(0, y, 0);
+                var b = new Point3d(xPositions[^1], y, 0);
+                geoms.Add(new LineCurve(a, b));
+                atts.Add(new ObjectAttributes());
+            }
         }
 
         // Grid - vertical
-        for (int c = 0; c < xPositions.Count; c++)
+        if (drawGrid)
         {
-            var a = new Point3d(xPositions[c], 0, 0);
-            var b = new Point3d(xPositions[c], yPositions[^1], 0);
-            geoms.Add(new LineCurve(a, b));
-            atts.Add(new ObjectAttributes());
+            for (int c = 0; c < xPositions.Count; c++)
+            {
+                var a = new Point3d(xPositions[c], 0, 0);
+                var b = new Point3d(xPositions[c], yPositions[^1], 0);
+                geoms.Add(new LineCurve(a, b));
+                atts.Add(new ObjectAttributes());
+            }
         }
 
         // Text
@@ -125,19 +153,66 @@ public static class RhinoTableRenderer
                 var plane = Plane.WorldXY;
                 plane.Origin = anchor;
 
-                var te = new TextEntity
+                // optional wrap: naive soft wrap by character count based on column width
+                if (enableWrap)
                 {
-                    Plane = plane,
-                    PlainText = text,
-                    TextHeight = textHeight,
-                };
+                    double approxCharWidth = textHeight * 0.6; // heuristic
+                    double maxWidth = Math.Max(0.0, x1 - x0);
+                    int maxChars = (int)Math.Max(1, Math.Floor(maxWidth / Math.Max(1e-6, approxCharWidth)));
+                    if (maxChars > 0 && text.Length > maxChars)
+                    {
+                        text = WrapText(text, maxChars);
+                    }
+                }
 
-                te.Justification = effective switch
+                TextEntity te;
+                bool appliedDimStyle = false;
+                if (dimStyleId.HasValue)
+                {
+                    // Use API factory that binds a DimensionStyle at creation time
+                    var ds = doc.DimStyles.FindId(dimStyleId.Value);
+                    bool wrapped = enableWrap;
+                    double rectWidth = enableWrap ? Math.Max(1e-6, x1 - x0) : 0.0;
+                    te = TextEntity.Create(text, plane, ds, wrapped, rectWidth, 0.0);
+                    appliedDimStyle = true;
+                }
+                else
+                {
+                    te = new TextEntity { Plane = plane, PlainText = text };
+                    if (!string.IsNullOrWhiteSpace(fontFamily))
+                    {
+                        te.Font = Font.FromQuartetProperties(fontFamily, false, false);
+                    }
+                }
+
+                // Only set explicit text height when
+                // - caller provided an override OR
+                // - no DimStyle applied (keep DimStyle height intact)
+                if (overrideTextHeightMm.HasValue || !appliedDimStyle)
+                {
+                    te.TextHeight = textHeight;
+                }
+
+                var baseJust = effective switch
                 {
                     HorizontalAlignment.Center => TextJustification.MiddleCenter,
                     HorizontalAlignment.Right => TextJustification.MiddleRight,
                     _ => TextJustification.MiddleLeft
                 };
+                // Map vertical alignment into TextJustification quadrant
+                te.Justification = baseJust;
+                if (verticalAlign == 0)
+                {
+                    if (baseJust == TextJustification.MiddleLeft) te.Justification = TextJustification.TopLeft;
+                    else if (baseJust == TextJustification.MiddleCenter) te.Justification = TextJustification.TopCenter;
+                    else if (baseJust == TextJustification.MiddleRight) te.Justification = TextJustification.TopRight;
+                }
+                else if (verticalAlign == 2)
+                {
+                    if (baseJust == TextJustification.MiddleLeft) te.Justification = TextJustification.BottomLeft;
+                    else if (baseJust == TextJustification.MiddleCenter) te.Justification = TextJustification.BottomCenter;
+                    else if (baseJust == TextJustification.MiddleRight) te.Justification = TextJustification.BottomRight;
+                }
 
                 geoms.Add(te);
                 atts.Add(new ObjectAttributes());
@@ -152,8 +227,38 @@ public static class RhinoTableRenderer
             idefTable.Delete(existing.Index, true, true);
         }
 
+        // Add temporary objects to document to preserve annotation styles reliably
+        for (int i = 0; i < geoms.Count; i++)
+        {
+            var g = geoms[i];
+            var a = atts[i];
+            Guid id;
+            switch (g)
+            {
+                case LineCurve lc:
+                    id = doc.Objects.AddCurve(lc, a);
+                    break;
+                case TextEntity te:
+                    id = doc.Objects.AddText(te, a);
+                    break;
+                default:
+                    id = doc.Objects.Add(g, a);
+                    break;
+            }
+            if (id != Guid.Empty) tempIds.Add(id);
+        }
+
         var basePlane = Plane.WorldXY;
-        int idefIndex = idefTable.Add(blockName, string.Empty, basePlane.Origin, geoms, atts);
+        // Retrieve geometries from ids for definition
+        var objs = tempIds.Select(id => doc.Objects.FindId(id)).Where(o => o != null).ToList();
+        var defGeoms = new List<GeometryBase>();
+        var defAtts = new List<ObjectAttributes>();
+        foreach (var o in objs)
+        {
+            defGeoms.Add(o.Geometry.Duplicate());
+            defAtts.Add(o.Attributes.Duplicate());
+        }
+        int idefIndex = idefTable.Add(blockName, string.Empty, basePlane.Origin, defGeoms, defAtts);
         if (idefIndex < 0)
             return Result.Failure;
 
@@ -161,11 +266,19 @@ public static class RhinoTableRenderer
         if (def == null)
             return Result.Failure;
 
+        // cleanup temp objects
+        foreach (var id in tempIds)
+            doc.Objects.Delete(id, true);
+
         instanceDefinitionIndex = def.Index;
         if (reinsertTransforms != null)
         {
+            reinsertedInstanceIds = new List<Guid>();
             foreach (var xf in reinsertTransforms)
-                doc.Objects.AddInstanceObject(def.Index, xf);
+            {
+                var id = doc.Objects.AddInstanceObject(def.Index, xf);
+                if (id != Guid.Empty) reinsertedInstanceIds.Add(id);
+            }
         }
         else if (insertInstance)
         {
@@ -174,6 +287,27 @@ public static class RhinoTableRenderer
         }
         doc.Views.Redraw();
         return Result.Success;
+    }
+
+    private static string WrapText(string input, int maxChars)
+    {
+        var words = input.Split(' ');
+        var line = string.Empty;
+        var lines = new List<string>();
+        foreach (var w in words)
+        {
+            if ((line.Length + (line.Length > 0 ? 1 : 0) + w.Length) > maxChars)
+            {
+                if (!string.IsNullOrEmpty(line)) lines.Add(line);
+                line = w;
+            }
+            else
+            {
+                line = string.IsNullOrEmpty(line) ? w : line + " " + w;
+            }
+        }
+        if (!string.IsNullOrEmpty(line)) lines.Add(line);
+        return string.Join("\n", lines);
     }
 }
 

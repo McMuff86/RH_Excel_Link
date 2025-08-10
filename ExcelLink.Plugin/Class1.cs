@@ -2,6 +2,7 @@
 using System.Runtime.InteropServices;
 using Rhino.PlugIns;
 using Rhino.UI;
+using ExcelLink.Plugin.Services;
 
 namespace ExcelLink.Plugin;
 

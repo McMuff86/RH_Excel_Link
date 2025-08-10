@@ -109,3 +109,4 @@ C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Core.Tests\obj\Release\net7.
 C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Core.Tests\obj\Release\net7.0\ExcelLink.Core.Tests.pdb
 C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Core.Tests\obj\Release\net7.0\ExcelLink.Core.Tests.genruntimeconfig.cache
 C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Core.Tests\obj\Release\net7.0\ref\ExcelLink.Core.Tests.dll
+C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Core.Tests\obj\Release\net7.0\ExcelLink.Core.Tests.sourcelink.json

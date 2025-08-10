@@ -10,3 +10,4 @@ C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Core\obj\Release\net7.0\Exce
 C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Core\obj\Release\net7.0\refint\ExcelLink.Core.dll
 C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Core\obj\Release\net7.0\ExcelLink.Core.pdb
 C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Core\obj\Release\net7.0\ref\ExcelLink.Core.dll
+C:\Users\GTBMX\source\repos\rh_ole_object\ExcelLink.Core\obj\Release\net7.0\ExcelLink.Core.sourcelink.json
